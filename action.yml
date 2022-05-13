@@ -1,0 +1,64 @@
+name: Kubernetes CLI (kubectl) Setup Action
+description: Setup `kubectl` with Kubernetes service account.
+author: Justin Chen <mail@justin0u0.com>
+branding:
+  color: blue
+  icon: zap
+inputs:
+  kubectl-version:
+    description: The `kubectl` CLI version. For example `v1.23.6`, `stable` or `latest`.
+    required: true
+    default: latest
+  cluster-certificate-authority-data:
+    description: Base64 encoded Kubernetes API server CA for a secured TLS connection. Apply to the `kubectl set-cluster --certificate-authority` field after base64 decoded.
+    required: true
+  cluster-server:
+    description: The URL of the server. Apply to the `kubectl set-cluster --server` field.
+    required: true
+  credentials-token:
+    description: The Kubernetes service account token. Apply to the `kubectl set-clusters --token` field.
+    required: true
+runs:
+  using: composite
+  steps:
+  - name: install kubectl
+    shell: bash
+    run: |
+      KUBECTL_VERSION=${{ inputs.kubectl-version }}
+
+      if [[ "$KUBECTL_VERSION" == "stable" ]]; then
+        KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/latest.txt)
+      elif [[ "$KUBECTL_VERSION" == "latest" ]]; then
+        KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+      fi
+
+      curl -LO "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
+      curl -LO "https://dl.k8s.io/$KUBECTL_VERSION/bin/linux/amd64/kubectl.sha256"
+
+      echo "$(cat kubectl.sha256) kubectl" | sha256sum --check
+
+      mkdir $GITHUB_WORKSPACE/bin
+      mv kubectl $GITHUB_WORKSPACE/bin
+      echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
+
+      kubectl version --client=true
+
+  - name: prepare certificate authority file
+    shell: bash
+    run: |
+      echo ${{ inputs.cluster-certificate-authority-data }} | base64 -d > $RUNNER_TEMP/ca.crt
+
+  - name: setup kubectl
+    env:
+      CLUSTER_NAME: github-actions-cluster
+      USER_NAME: github-actions-service-account
+      CONTEXT_NAME: github-actions
+    shell: bash
+    run: |
+      mkdir -p $HOME/.kube
+      touch $HOME/.kube/config
+
+      kubectl config set-cluster $CLUSTER_NAME --server ${{ inputs.cluster-server }} --certificate-authority $RUNNER_TEMP/ca.crt --embed-certs=true
+      kubectl config set-credentials $USER_NAME --token ${{ inputs.credentials-token }}
+      kubectl config set-context $CONTEXT_NAME --cluster $CLUSTER_NAME --user $USER_NAME
+      kubectl config use-context $CONTEXT_NAME
