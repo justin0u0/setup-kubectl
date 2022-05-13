@@ -62,3 +62,5 @@ runs:
       kubectl config set-credentials $USER_NAME --token ${{ inputs.credentials-token }}
       kubectl config set-context $CONTEXT_NAME --cluster $CLUSTER_NAME --user $USER_NAME
       kubectl config use-context $CONTEXT_NAME
+
+      kubectl version
