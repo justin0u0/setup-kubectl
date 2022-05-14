@@ -8,16 +8,20 @@ inputs:
   kubectl-version:
     description: The `kubectl` CLI version. For example `v1.23.6`, `stable` or `latest`.
     required: true
-    default: latest
+    default: stable
   cluster-certificate-authority-data:
-    description: Base64 encoded Kubernetes API server CA for a secured TLS connection. Apply to the `kubectl set-cluster --certificate-authority` field after base64 decoded.
+    description: Base64 encoded Kubernetes API server CA for a secured TLS connection. Apply to the `kubectl set-cluster --certificate-authority` flag after base64 decoded.
     required: true
   cluster-server:
-    description: The URL of the server. Apply to the `kubectl set-cluster --server` field.
+    description: The URL of the server. Apply to the `kubectl set-cluster --server` flag.
     required: true
   credentials-token:
-    description: The Kubernetes service account token. Apply to the `kubectl set-clusters --token` field.
+    description: The Kubernetes service account token. Apply to the `kubectl set-clusters --token` flag.
     required: true
+  context-namespace:
+    description: Set the default namespace of the context. Apply to the `kubectl set-context --namespace` flag.
+    required: true
+    default: default
 runs:
   using: composite
   steps:
@@ -60,7 +64,7 @@ runs:
 
       kubectl config set-cluster $CLUSTER_NAME --server ${{ inputs.cluster-server }} --certificate-authority $RUNNER_TEMP/ca.crt --embed-certs=true
       kubectl config set-credentials $USER_NAME --token ${{ inputs.credentials-token }}
-      kubectl config set-context $CONTEXT_NAME --cluster $CLUSTER_NAME --user $USER_NAME
+      kubectl config set-context $CONTEXT_NAME --cluster $CLUSTER_NAME --user $USER_NAME --namespace ${{ inputs.context-namespace }}
       kubectl config use-context $CONTEXT_NAME
 
       kubectl version
