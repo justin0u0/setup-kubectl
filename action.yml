@@ -31,9 +31,9 @@ runs:
       KUBECTL_VERSION=${{ inputs.kubectl-version }}
 
       if [[ "$KUBECTL_VERSION" == "stable" ]]; then
-        KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/latest.txt)
-      elif [[ "$KUBECTL_VERSION" == "latest" ]]; then
         KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+      elif [[ "$KUBECTL_VERSION" == "latest" ]]; then
+        KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/latest.txt)
       fi
 
       curl -LO "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
